@@ -1,68 +1,156 @@
-# Wazuh × Claude 智慧威脅獵捕系統
+# Wazuh × Claude Threat Hunting Assistant
 
-## 一、專題簡介
-本專題結合 **Wazuh SIEM 資安監控系統** 與 **Claude 大型語言模型（LLM）**，
-建置一套「AI 輔助的威脅獵捕（Threat Hunting）系統」。
+本專案整合 **Wazuh SIEM** 與 **Claude Large Language Model (LLM)**，  
+實作一個可以將資安事件（alerts）轉換為「**中文可讀的威脅分析與管理建議**」的 Threat Hunting Assistant。
 
-系統可自動蒐集 Wazuh 偵測到的安全事件，並透過大型語言模型進行分析，
-協助管理者快速理解事件風險、目前系統狀況，以及後續可採取的處理行動。
+透過此專案，驗證以下完整流程：
+
+> Wazuh 偵測 → Indexer 儲存 → Python Agent 擷取 → Claude 分析 → 中文風險摘要
 
 ---
 
-## 二、系統架構說明
-系統整體流程如下：
+## 專案目標
 
+- 建立一套基於 **Wazuh SIEM** 的威脅監控環境
+- 從 Wazuh Indexer 取得近期安全事件（alerts）
+- 將結構化的安全事件轉為自然語言描述
+- 使用 **Claude LLM** 進行風險判斷與管理者行動建議
+- 實作 AI 輔助的 Threat Hunting 流程，而非僅止於 log 檢視
+
+---
+
+## 系統架構與工具
+
+### 使用工具與技術
+- **Wazuh All-in-One**（Manager / Indexer / Dashboard / API）
+- **OpenSearch（Wazuh Indexer）**
+- **Python 3 + requests**
+- **Claude API（Anthropic）**
+- **Docker（MCP Server for Wazuh）**
+- **Claude Desktop（MCP Client）**
+
+### 系統架構概念
 Wazuh Agent
 ↓
 Wazuh Manager
 ↓
-Elasticsearch（wazuh-alerts-*）
+Wazuh Indexer (OpenSearch)
 ↓
-Python 威脅獵捕程式
+Python Threat Hunting Agent
 ↓
-Claude LLM 事件分析與建議
+Claude LLM
+↓
+中文威脅分析與建議
 
 ---
 
-## 三、系統功能
-本系統具備以下功能：
+## Wazuh All-in-One 安裝
 
-- 自動從 Wazuh 取得近期安全事件（Alerts）
-- 彙整事件內容（來源主機、等級、規則描述等）
-- 透過 Claude LLM 分析事件風險
-- 以白話中文產出：
-  - 是否存在高風險事件
-  - 目前系統整體安全狀況摘要
-  - 管理者可採取的建議行動
+本專案使用 Wazuh 官方提供的 **All-in-One 安裝腳本**，一次完成所有核心服務部署。
 
----
-
-## 四、執行環境與需求
-- Python 3.9 以上
-- Wazuh 4.x
-- Elasticsearch（Wazuh 預設）
-- Claude API Key
-
----
-
-## 五、執行方式
-
-1. 安裝套件
 ```bash
-pip install -r requirements.txt
+curl -sO https://packages.wazuh.com/4.12/wazuh-install.sh
+sudo bash wazuh-install.sh -a
+此指令會自動安裝並設定以下服務：
+Wazuh Manager
+Wazuh Indexer（OpenSearch）
+Wazuh Dashboard
+Wazuh API（預設 port 55000）
 
-3. 設定 Claude API Key
-export CLAUDE_API_KEY="你的_API_KEY"
+Wazuh 服務與連線驗證
+防火牆與 Port 設定
+
+為確保外部程式可正常連線至 Wazuh API 與 Indexer，需開放以下連接埠：
+
+55000/tcp：Wazuh API
+
+9200/tcp：Wazuh Indexer（OpenSearch）
+
+sudo ufw status
+sudo ufw allow 55000/tcp
+sudo ufw allow 9200/tcp
+sudo ufw reload
+ 此步驟用於避免因防火牆設定導致 API 或 Indexer 無法連線。
+
+Indexer（OpenSearch）連線測試
+
+使用 curl 驗證 Indexer 是否正常運作：
+
+curl -k -u admin:<password> https://<WAZUH_IP>:9200
 
 
-2. 執行程式
-python3 wazuh_claude_threat_hunting.py
+成功回傳 OpenSearch 版本資訊，代表 Indexer 服務正常。
 
-六、系統輸出範例
+MCP Server 與 Claude Desktop 串接
 
-系統會輸出類似以下的分析結果：
+本專案使用 mcp-server-wazuh 作為 Claude 與 Wazuh 間的橋樑。
 
-🔐 Claude 威脅分析結果：
-1. 判斷是否存在高風險事件
-2. 目前系統狀況摘要
-3. 建議管理者可採取的處理行動
+MCP Server 啟動方式（Docker）
+docker run --rm -it \
+  -e WAZUH_API_HOST=localhost \
+  -e WAZUH_API_PORT=55000 \
+  -e WAZUH_API_USERNAME=admin \
+  -e WAZUH_API_PASSWORD=<WAZUH_PASSWORD> \
+  -e WAZUH_INDEXER_HOST=localhost \
+  -e WAZUH_INDEXER_PORT=9200 \
+  -e WAZUH_INDEXER_USERNAME=admin \
+  -e WAZUH_INDEXER_PASSWORD=<WAZUH_PASSWORD> \
+  -e WAZUH_VERIFY_SSL=false \
+  ghcr.io/gbrigandi/mcp-server-wazuh:latest
+
+
+當 log 中出現以下訊息時，表示 MCP Server 成功以 stdio 模式 啟動：
+
+INFO mcp_server_wazuh: Using stdio transport
+
+
+📌 此模式與 Claude Desktop MCP 完全相容，無需額外修改程式碼。
+
+Threat Hunting Agent 實作
+Python 虛擬環境設定
+sudo apt install -y python3-venv
+python3 -m venv venv
+source venv/bin/activate
+pip install requests anthropic
+
+Threat Hunting 流程說明
+
+從 Wazuh Indexer（OpenSearch）查詢最新 alerts
+
+擷取事件關鍵欄位（主機、等級、描述、時間）
+
+組合為自然語言格式的事件摘要
+
+將事件摘要送至 Claude LLM
+
+取得中文威脅分析與建議
+
+Threat Hunting Agent 執行結果（Alerts）
+
+成功從 Indexer 擷取近期安全事件（如 AppArmor DENIED、PAM Login 等）：
+
+Claude 威脅分析輸出（LLM 分析）
+
+Claude 會根據安全事件內容，自動產生以下分析：
+
+是否屬於高風險事件
+
+目前系統狀況摘要（白話中文）
+
+管理者可採取的建議行動
+
+此步驟展示了 LLM 在 SIEM 中輔助資安分析的實際應用價值。
+
+系統整合成果展示
+
+最終成果成功串接：
+
+Wazuh SIEM
+
+MCP Server
+
+Python Threat Hunting Agent
+
+Claude LLM
+
+完整流程可自動產出中文威脅分析結果。
