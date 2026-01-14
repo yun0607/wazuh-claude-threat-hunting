@@ -53,16 +53,16 @@ curl -sO https://packages.wazuh.com/4.12/wazuh-install.sh
 sudo bash wazuh-install.sh -a
 ```
 此指令會自動安裝並設定以下服務：
-Wazuh Manager
-Wazuh Indexer（OpenSearch）
-Wazuh Dashboard
-Wazuh API（預設 port 55000）
+- Wazuh Manager
+- Wazuh Indexer（OpenSearch）
+- Wazuh Dashboard
+- Wazuh API（預設 port 55000）
 
-Wazuh 服務與連線驗證
-防火牆與 Port 設定
+---
 
-為確保外部程式可正常連線至 Wazuh API 與 Indexer，需開放以下連接埠：
-
+## Wazuh 服務與連線驗證
+防火牆與 Port 設定，為確保外部程式可正常連線至 Wazuh API 與 Indexer，需開放以下連接埠：
+```
 55000/tcp：Wazuh API
 
 9200/tcp：Wazuh Indexer（OpenSearch）
@@ -71,22 +71,25 @@ sudo ufw status
 sudo ufw allow 55000/tcp
 sudo ufw allow 9200/tcp
 sudo ufw reload
+```
  此步驟用於避免因防火牆設定導致 API 或 Indexer 無法連線。
+ 
+---
 
-Indexer（OpenSearch）連線測試
+## Indexer（OpenSearch）連線測試
 
 使用 curl 驗證 Indexer 是否正常運作：
-
+```
 curl -k -u admin:<password> https://<WAZUH_IP>:9200
-
-
+```
 成功回傳 OpenSearch 版本資訊，代表 Indexer 服務正常。
 
-MCP Server 與 Claude Desktop 串接
+---
 
-本專案使用 mcp-server-wazuh 作為 Claude 與 Wazuh 間的橋樑。
+## MCP Server 與 Claude Desktop 串接
 
-MCP Server 啟動方式（Docker）
+本專案使用 mcp-server-wazuh 作為 Claude 與 Wazuh 間的橋樑，MCP Server 啟動方式（Docker）：
+```
 docker run --rm -it \
   -e WAZUH_API_HOST=localhost \
   -e WAZUH_API_PORT=55000 \
@@ -98,14 +101,12 @@ docker run --rm -it \
   -e WAZUH_INDEXER_PASSWORD=<WAZUH_PASSWORD> \
   -e WAZUH_VERIFY_SSL=false \
   ghcr.io/gbrigandi/mcp-server-wazuh:latest
-
-
+```
 當 log 中出現以下訊息時，表示 MCP Server 成功以 stdio 模式 啟動：
-
+```
 INFO mcp_server_wazuh: Using stdio transport
-
-
-📌 此模式與 Claude Desktop MCP 完全相容，無需額外修改程式碼。
+```
+(此模式與 Claude Desktop MCP 完全相容，無需額外修改程式碼。)
 
 Threat Hunting Agent 實作
 Python 虛擬環境設定
@@ -114,44 +115,21 @@ python3 -m venv venv
 source venv/bin/activate
 pip install requests anthropic
 
-Threat Hunting 流程說明
+---
 
-從 Wazuh Indexer（OpenSearch）查詢最新 alerts
+## Threat Hunting 流程說明
 
-擷取事件關鍵欄位（主機、等級、描述、時間）
+- 從 Wazuh Indexer（OpenSearch）查詢最新 alerts
+- 擷取事件關鍵欄位（主機、等級、描述、時間）
+- 組合為自然語言格式的事件摘要
+- 將事件摘要送至 Claude LLM
+- 取得中文威脅分析與建議
+- Threat Hunting Agent 執行結果（Alerts）
+- 成功從 Indexer 擷取近期安全事件（如 AppArmor DENIED、PAM Login 等）：Claude 威脅分析輸出（LLM 分析）
 
-組合為自然語言格式的事件摘要
+## Claude 會根據安全事件內容，自動產生以下分析：
+- 是否屬於高風險事件
+- 目前系統狀況摘要（白話中文）
+- 管理者可採取的建議行動
 
-將事件摘要送至 Claude LLM
 
-取得中文威脅分析與建議
-
-Threat Hunting Agent 執行結果（Alerts）
-
-成功從 Indexer 擷取近期安全事件（如 AppArmor DENIED、PAM Login 等）：
-
-Claude 威脅分析輸出（LLM 分析）
-
-Claude 會根據安全事件內容，自動產生以下分析：
-
-是否屬於高風險事件
-
-目前系統狀況摘要（白話中文）
-
-管理者可採取的建議行動
-
-此步驟展示了 LLM 在 SIEM 中輔助資安分析的實際應用價值。
-
-系統整合成果展示
-
-最終成果成功串接：
-
-Wazuh SIEM
-
-MCP Server
-
-Python Threat Hunting Agent
-
-Claude LLM
-
-完整流程可自動產出中文威脅分析結果。
