@@ -73,7 +73,8 @@ sudo ufw allow 9200/tcp
 sudo ufw reload
 ```
  此步驟用於避免因防火牆設定導致 API 或 Indexer 無法連線。
- 
+![開放 Wazuh API（55000）與 Indexer（9200）連接埠](圖片路徑) 
+
 ---
 
 ## Indexer（OpenSearch）連線測試
@@ -83,6 +84,7 @@ sudo ufw reload
 curl -k -u admin:<password> https://<WAZUH_IP>:9200
 ```
 成功回傳 OpenSearch 版本資訊，代表 Indexer 服務正常。
+![成功連線至 Wazuh Indexer（OpenSearch），確認服務正常運作](圖片路徑) 
 
 ---
 
@@ -107,7 +109,7 @@ docker run --rm -it \
 INFO mcp_server_wazuh: Using stdio transport
 ```
 (此模式與 Claude Desktop MCP 完全相容，無需額外修改程式碼。)
-
+![MCP Server 成功以 stdio 模式啟動，可供 Claude Desktop 直接串接](圖片路徑) 
 
 ## Python 虛擬環境設定
 ```
@@ -121,6 +123,7 @@ pip install requests anthropic
 ## Threat Hunting 流程說明
 
 - 從 Wazuh Indexer（OpenSearch）查詢最新 alerts
+  ![Threat Hunting Agent 成功從 Wazuh Indexer 擷取近期安全事件](圖片路徑) 
 - 擷取事件關鍵欄位（主機、等級、描述、時間）
 - 組合為自然語言格式的事件摘要
 - 將事件摘要送至 Claude LLM
@@ -132,5 +135,6 @@ pip install requests anthropic
 - 是否屬於高風險事件
 - 目前系統狀況摘要（白話中文）
 - 管理者可採取的建議行動
+  ![Claude LLM 將 Wazuh alerts 轉換為中文可讀的威脅分析與管理建議](圖片路徑) 
 
 
