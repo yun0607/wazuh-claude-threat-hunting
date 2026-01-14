@@ -73,7 +73,7 @@ sudo ufw allow 9200/tcp
 sudo ufw reload
 ```
  此步驟用於避免因防火牆設定導致 API 或 Indexer 無法連線。
-![開放 Wazuh API（55000）與 Indexer（9200）連接埠](截圖 2026-01-11 晚上11.34.11.png) 
+![開放 Wazuh API（55000）與 Indexer（9200）連接埠](ufw設定) 
 
 ---
 
