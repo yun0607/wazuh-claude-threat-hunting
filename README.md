@@ -84,7 +84,7 @@ sudo ufw reload
 curl -k -u admin:<password> https://<WAZUH_IP>:9200
 ```
 成功回傳 OpenSearch 版本資訊，代表 Indexer 服務正常。
-![成功連線至 Wazuh Indexer（OpenSearch），確認服務正常運作](圖片路徑) 
+![成功連線至 Wazuh Indexer（OpenSearch），確認服務正常運作](Indexer連線測試) 
 
 ---
 
