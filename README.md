@@ -135,6 +135,6 @@ pip install requests anthropic
 - 是否屬於高風險事件
 - 目前系統狀況摘要（白話中文）
 - 管理者可採取的建議行動
-  ![Claude LLM 將 Wazuh alerts 轉換為中文可讀的威脅分析與管理建議](圖片路徑) 
+  ![Claude LLM 將 Wazuh alerts 轉換為中文可讀的威脅分析與管理建議](claude分析結果) 
 
 
