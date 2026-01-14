@@ -108,13 +108,14 @@ INFO mcp_server_wazuh: Using stdio transport
 ```
 (此模式與 Claude Desktop MCP 完全相容，無需額外修改程式碼。)
 
-Threat Hunting Agent 實作
-Python 虛擬環境設定
+
+## Python 虛擬環境設定
+```
 sudo apt install -y python3-venv
 python3 -m venv venv
 source venv/bin/activate
 pip install requests anthropic
-
+```
 ---
 
 ## Threat Hunting 流程說明
