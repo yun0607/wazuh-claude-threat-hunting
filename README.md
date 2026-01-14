@@ -123,7 +123,7 @@ pip install requests anthropic
 ## Threat Hunting 流程說明
 
 - 從 Wazuh Indexer（OpenSearch）查詢最新 alerts
-  ![Threat Hunting Agent 成功從 Wazuh Indexer 擷取近期安全事件](圖片路徑) 
+  ![Threat Hunting Agent 成功從 Wazuh Indexer 擷取近期安全事件](Threat＿Hunting＿流程說明) 
 - 擷取事件關鍵欄位（主機、等級、描述、時間）
 - 組合為自然語言格式的事件摘要
 - 將事件摘要送至 Claude LLM
